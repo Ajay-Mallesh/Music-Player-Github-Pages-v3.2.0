@@ -997,35 +997,23 @@
         // Process Directory (for folder selection)
         async function processDirectory(dirHandle) {
             const files = [];
-            const audioExtensions = ['mp3', 'flac', 'm4a', 'wav', 'ogg', 'aac', 'wma', 'aiff', 'alac', 'dsf', 'dff', 'dsd', 'ape', 'opus'];
             
             try {
-                let totalEntries = 0;
                 for await (const entry of dirHandle.values()) {
-                    totalEntries++;
                     try {
                         if (entry.kind === 'file') {
                             const file = await entry.getFile();
-                            const fileExt = file.name.toLowerCase().split('.').pop();
-                            const isMimeAudio = file.type && file.type.startsWith('audio/');
-                            const isExtensionAudio = audioExtensions.includes(fileExt);
-                            
-                            console.log(`📄 File: ${file.name} | Type: ${file.type || 'unknown'} | Ext: .${fileExt} | IsAudio: ${isMimeAudio || isExtensionAudio}`);
-                            
-                            // Check both MIME type and file extension
-                            if (isMimeAudio || isExtensionAudio) {
-                                files.push(file);
-                                console.log('✅ Added audio file:', file.name);
-                            }
+                            files.push(file);
+                            console.log('📄 Found file:', file.name);
                         }
                     } catch (entryError) {
-                        console.warn('⚠️ Could not process entry:', entry.name, entryError);
+                        console.warn('⚠️ Could not access:', entry.name);
                     }
                 }
-                console.log(`📊 Scanned ${totalEntries} files, found ${files.length} audio files`);
+                console.log(`📊 Total files found: ${files.length}`);
             } catch (scanError) {
-                console.error('❌ Error scanning directory:', scanError.name, scanError.message);
-                throw new Error('Failed to scan folder. Make sure you have access to the selected folder.');
+                console.error('❌ Error scanning directory:', scanError);
+                throw scanError;
             }
             
             return files;
