@@ -2246,10 +2246,13 @@ window.addEventListener('load', checkAudioContextSupport);
                     alert('⚠️ Your browser doesn\'t support folder selection. Please use Chrome or Edge, or select individual files instead.');
                 }
             } catch (error) {
-                console.error('Error selecting folder:', error);
-                if (error.name !== 'AbortError') {
+                if (error.name === 'AbortError') {
+                    console.log('📁 Folder selection cancelled by user');
+                } else {
+                    console.error('Error selecting folder:', error);
                     alert('Error selecting folder: ' + error.message);
                 }
+                hideProgress();
             }
         }
 
