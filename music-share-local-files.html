@@ -942,12 +942,20 @@
             try {
                 if ('showDirectoryPicker' in window) {
                     console.log('✅ File System Access API supported');
+                    console.log('Opening folder picker...');
                     const dirHandle = await window.showDirectoryPicker({
                         mode: 'read'
                     });
                     
+                    console.log('Folder selected:', dirHandle.name);
                     showProgress('Scanning folder...', 0);
-                    await processDirectory(dirHandle);
+                    const files = await processDirectory(dirHandle);
+                    if (files.length > 0) {
+                        processFiles(files);
+                    } else {
+                        alert('No audio files found in the selected folder.');
+                        hideProgress();
+                    }
                 } else {
                     alert('⚠️ Your browser doesn\'t support folder selection. Please use Chrome or Edge, or select individual files instead.');
                 }
@@ -955,8 +963,8 @@
                 if (error.name === 'AbortError') {
                     console.log('📁 Folder selection cancelled by user');
                 } else {
-                    console.error('Error selecting folder:', error);
-                    alert('Error selecting folder: ' + error.message);
+                    console.error('❌ Error selecting folder:', error.name, error.message);
+                    alert('❌ Error selecting folder:\n' + error.message + '\n\nPlease try selecting individual files instead.');
                 }
                 hideProgress();
             }
@@ -989,22 +997,31 @@
         // Process Directory (for folder selection)
         async function processDirectory(dirHandle) {
             const files = [];
+            const audioExtensions = ['mp3', 'flac', 'm4a', 'wav', 'ogg', 'aac', 'wma', 'aiff', 'alac', 'dsf', 'dff', 'dsd'];
             
-            for await (const entry of dirHandle.values()) {
-                if (entry.kind === 'file') {
-                    const file = await entry.getFile();
-                    if (file.type.startsWith('audio/')) {
-                        files.push(file);
+            try {
+                for await (const entry of dirHandle.values()) {
+                    try {
+                        if (entry.kind === 'file') {
+                            const file = await entry.getFile();
+                            const fileExt = file.name.toLowerCase().split('.').pop();
+                            // Check both MIME type and file extension
+                            if (file.type.startsWith('audio/') || audioExtensions.includes(fileExt)) {
+                                files.push(file);
+                                console.log('📁 Found audio file:', file.name);
+                            }
+                        }
+                        // Skip subdirectories on mobile to avoid permission issues
+                    } catch (entryError) {
+                        console.warn('⚠️ Could not process entry:', entry.name, entryError);
                     }
                 }
+            } catch (scanError) {
+                console.error('❌ Error scanning directory:', scanError.name, scanError.message);
+                throw new Error('Failed to scan folder. Make sure you have access to the selected folder.');
             }
             
-            if (files.length > 0) {
-                processFiles(files);
-            } else {
-                alert('No audio files found in the selected folder.');
-                hideProgress();
-            }
+            return files;
         }
 
         // Process Files
