@@ -1837,8 +1837,7 @@ window.addEventListener('load', checkAudioContextSupport);
         async function loadMusicFolder() {
             try {
                 const dirHandle = await window.showDirectoryPicker({
-                    mode: 'read',
-                    startIn: 'music'
+                    mode: 'read'
                 });
                 
                 showProgress();
@@ -2238,8 +2237,7 @@ window.addEventListener('load', checkAudioContextSupport);
                 if ('showDirectoryPicker' in window) {
                     console.log('✅ File System Access API supported');
                     const dirHandle = await window.showDirectoryPicker({
-                        mode: 'read',
-                        startIn: 'music'
+                        mode: 'read'
                     });
                     
                     showProgress('Scanning folder...', 0);
