@@ -949,34 +949,61 @@
                         dirHandle = await window.showDirectoryPicker({
                             mode: 'read'
                         });
+                        
+                        console.log('✅ Folder selected:', dirHandle.name);
+                        showProgress('Scanning folder...', 0);
+                        const files = await processDirectory(dirHandle);
+                        console.log(`Found ${files.length} files`);
+                        
+                        if (files.length > 0) {
+                            processFiles(files);
+                        } else {
+                            alert('No audio files found in the selected folder.');
+                            hideProgress();
+                        }
                     } catch (pickerError) {
                         console.error('Picker error:', pickerError.name, pickerError.message);
+                        
+                        // If showDirectoryPicker fails, try webkitdirectory fallback
                         if (pickerError.name === 'AbortError') {
-                            console.log('ℹ️ User cancelled the folder picker');
-                            return;
+                            console.log('📱 showDirectoryPicker failed - trying webkitdirectory fallback');
+                            selectFolderFallback();
+                        } else {
+                            throw pickerError;
                         }
-                        throw pickerError;
-                    }
-                    
-                    console.log('✅ Folder selected:', dirHandle.name);
-                    showProgress('Scanning folder...', 0);
-                    const files = await processDirectory(dirHandle);
-                    console.log(`Found ${files.length} files`);
-                    
-                    if (files.length > 0) {
-                        processFiles(files);
-                    } else {
-                        alert('No audio files found in the selected folder.');
-                        hideProgress();
                     }
                 } else {
-                    alert('⚠️ Your browser doesn\'t support folder selection. Please use Chrome or Edge, or select individual files instead.');
+                    console.log('showDirectoryPicker not supported, using webkitdirectory fallback');
+                    selectFolderFallback();
                 }
             } catch (error) {
                 console.error('❌ Unexpected error:', error.name, error.message);
                 alert('Error: ' + error.message);
                 hideProgress();
             }
+        }
+        
+        function selectFolderFallback() {
+            console.log('Opening file picker with folder selection...');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.webkitdirectory = true;
+            input.mozdirectory = true; // Firefox support
+            input.accept = 'audio/*,.mp3,.flac,.wav,.m4a,.aac,.ogg,.wma,.aiff,.alac,.dsf,.dff,.dsd,.ape,.opus';
+            
+            input.addEventListener('change', function(event) {
+                const files = Array.from(event.target.files);
+                console.log(`📁 Folder picker returned ${files.length} files`);
+                if (files.length > 0) {
+                    showProgress('Processing audio files...', 0);
+                    processFiles(files);
+                } else {
+                    alert('No files selected');
+                }
+            });
+            
+            input.click();
         }
 
         async function selectMusicFiles() {
